@@ -1,7 +1,7 @@
 from pathlib import Path
 
 path = Path(__file__)
-while not Path.is_dir(path / 'psi_praktikum' ):
+while not Path.is_dir(path / 'psi_praktikum'):
     path = path.parent
 
 PROJECT_ROOT = path

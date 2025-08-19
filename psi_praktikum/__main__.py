@@ -2,23 +2,22 @@
 # psi-praktikum
 """
 import mjaf
+
 mjaf.logging.set_handlers(
-    logger_name="psi_praktikum",
+    logger_name='psi_praktikum',
 )
 
 
-from psi_praktikum._utils.constants import *
-from psi_praktikum._utils import paths
+import logging
 
+import matplotlib.pyplot as plt
 import numpy as np
 import scipy
-import matplotlib.pyplot as plt
-from time import sleep
-from pprint import pprint
 
-import logging
+from psi_praktikum._utils import paths
+from psi_praktikum._utils.constants import *
+
 log = logging.getLogger(__name__)
-
 
 
 # plt.rcParams['text.usetex'] = True
@@ -62,17 +61,14 @@ def parse_data(filename: str):
             line = line.strip()
             output.append(int(line))
 
-
     return np.asarray(output)
 
 
 def fit_simulated(N_0):
     samples = sample_double_exponential(N_0, T_MU, T_PI)
 
-
     samples = samples[samples < 1e-5]
     samples = samples[1e-15 < samples]
-
 
     hist, bin_edges = np.histogram(samples, 5000)
     xs = (bin_edges[:-1] + bin_edges[1:]) / 2
@@ -95,15 +91,13 @@ def fit_simulated(N_0):
         # p0=(1,1),
         bounds=(
             (0, 0),
-            (np.inf, np.inf)
-        )
+            (np.inf, np.inf),
+        ),
     )
 
     print(f'{popt=}')
 
-
-    plt.bar(xs, hist, 0.8 * ( bin_edges[1:] - bin_edges[:-1] ))
-
+    plt.bar(xs, hist, 0.8 * (bin_edges[1:] - bin_edges[:-1]))
 
     # ts = np.linspace(0, 1e-5, num=10_000)
     # true_data = 500 * double_exponential(ts, T_MU, T_PI)
@@ -115,13 +109,10 @@ def fit_simulated(N_0):
     plt.show()
 
 
-
-
 def fit_data(filename):
     data = parse_data(filename)
 
     bin_edges = bin_edges
-
 
     bin_edges = range(len(data) + 1)
     bin_edge_times = bin_numbers_to_times(bin_edges, P_1, P_2)
@@ -130,10 +121,10 @@ def fit_data(filename):
     plt.bar(
         times,
         data,
-        0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
+        0.8 * (bin_edge_times[1:] - bin_edge_times[:-1]),
     )
 
-    plt.xlabel(r"Decay time [microseconds]")
+    plt.xlabel(r'Decay time [microseconds]')
 
     popt, pcov = scipy.optimize.curve_fit(
         double_exponential,
@@ -144,7 +135,6 @@ def fit_data(filename):
     print(popt)
 
     plt.show()
-
 
 
 def smooth_peaks(data, sigma=10):
@@ -170,6 +160,7 @@ def apply_fit(X, p_1, p_2):
     P = np.vstack([p_1, p_2])
     return A @ P
 
+
 def fit_calibration(
     path,
     times,
@@ -182,7 +173,13 @@ def fit_calibration(
 
     if visualize:
         plt.bar(bin_numbers, data)
-        plt.vlines(peak_bin_indices, -0.1 * max(data), 0, color='red', linestyle='dotted')
+        plt.vlines(
+            peak_bin_indices,
+            -0.1 * max(data),
+            0,
+            color='red',
+            linestyle='dotted',
+        )
         plt.xlabel('bin number')
         plt.ylabel('counts')
         plt.show()
@@ -195,7 +192,7 @@ def fit_calibration(
             peak_bin_indices,
             apply_fit(peak_bin_indices, *parameters),
             color='green',
-            linestyle='--'
+            linestyle='--',
         )
         plt.xlabel('bin number')
         plt.ylabel('time [microseconds]')
@@ -204,12 +201,11 @@ def fit_calibration(
     return parameters
 
 
-    
 def main():
     mjaf.logging.set_handlers(
-        logger_name="psi_praktikum",
+        logger_name='psi_praktikum',
     )
-    print("---Starting---")
+    print('---Starting---')
 
     # fit_data(
     #     "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
@@ -233,7 +229,8 @@ def main():
     #     ]
     # )
 
-    print("---Done---")
+    print('---Done---')
+
 
 if __name__ == '__main__':
     main()

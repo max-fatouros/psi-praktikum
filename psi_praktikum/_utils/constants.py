@@ -1,6 +1,5 @@
 import importlib.metadata
 
-
 VERSION = importlib.metadata.version('psi_praktikum')
 
 T_MU = 2.1969811e-6
