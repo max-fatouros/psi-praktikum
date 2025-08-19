@@ -1,0 +1,54 @@
+# https://packaging.python.org/en/latest/guides/writing-pyproject-toml/#a-full-example
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "psi-praktikum"
+requires-python = ">=3.10"
+authors = [
+    { name = "Max Fatouros", email = "maxjohnalexander.fatouros@uzh.ch" }
+]
+description = "particle physics experiment at PSI"
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "mjaf==0.2.1",
+    "numpy",
+    "scipy",
+    "matplotlib",
+
+]
+version = '0.0.0'
+
+[project.optional-dependencies]
+dev = [
+    'pytest',
+    'pre-commit',
+    ]
+
+
+[tool.autopep8]
+# Let isort handle imports
+ignore = [
+    "E401",
+    "E402",
+]
+
+[tool.setuptools.packages.find]
+include = ["psi_praktikum", "psi_praktikum.*"]
+
+[tool.pytest.ini_options]
+pythonpath = "."
+
+
+[tool.isort]
+multi_line_output = 3
+force_grid_wrap = 2
+
+# [project.urls]
+
+# [project.scripts]
+# "psi-praktikum" = "psi_praktikum.__main__:main"
