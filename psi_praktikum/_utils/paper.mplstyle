@@ -10,10 +10,3 @@ legend.frameon: True
 legend.shadow: False
 savefig.dpi: 300  # seems to have no effect for pdfs, except longer run-times
 savefig.format: pdf
-xtick.labelsize: 18
-ytick.direction: in
-ytick.labelsize: 18
-ytick.major.size: 5
-ytick.major.width: 1
-ytick.minor.size: 2
-ytick.minor.width: 0.8
