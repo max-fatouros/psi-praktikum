@@ -38,6 +38,6 @@ The important files are listed below.
 │   └── PSI_lab_2025/  # a final copy of all the data we collected
 ├── notebooks/  # a place for Juypter notebooks
 └── psi_praktikum
-    ├── __main__.py
-    └── _utils/
+    ├── __main__.py  # all the functions are here.
+    └── _utils/  # extra code: paths and constants
 ```
