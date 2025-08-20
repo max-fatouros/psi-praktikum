@@ -117,7 +117,7 @@ def fit_data(filename):
     bin_edges = bin_edges
 
     bin_edges = range(len(data) + 1)
-    bin_edge_times = bin_numbers_to_times(bin_edges, P_1, P_2)
+    bin_edge_times = linear_fit(bin_edges, constants.P_1, constants.P_2)
     times = bin_edge_times[:-1]
 
     plt.bar(
@@ -126,7 +126,7 @@ def fit_data(filename):
         0.8 * (bin_edge_times[1:] - bin_edge_times[:-1]),
     )
 
-    plt.xlabel(r'Decay time [microseconds]')
+    plt.xlabel('Decay time [microseconds]')
 
     popt, pcov = scipy.optimize.curve_fit(
         double_exponential,
@@ -148,7 +148,7 @@ def find_peaks(data):
     return peak_bin_indices
 
 
-def linear_fit(X, Y):
+def linear_fit(X, Y) -> np.ndarray:
     """
     AP = Y
     """
@@ -214,10 +214,10 @@ def main():
     #     limits=(None, 3)
     # )
 
-    fit_simulated(data)
+    fit_simulated(250_000)
 
     # fit_calibration(
-    #     "data/TimeCalibration_delaytrigger_05to7us.Spe",
+    #     "TimeCalibration_delaytrigger_05to7us.Spe",
     #     times = [
     #         0.5,
     #         1,
