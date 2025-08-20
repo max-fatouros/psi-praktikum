@@ -9,7 +9,7 @@ import numpy as np
 import scipy
 
 mjaf.logging.set_handlers(
-    logger_name='psi_praktikum',
+    logger_name=__name__,
 )
 
 from psi_praktikum._utils import (
@@ -224,10 +224,6 @@ def fit_calibration(
 
 
 def main():
-    mjaf.logging.set_handlers(
-        logger_name='psi_praktikum',
-    )
-
     # fit_data(
     #     "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
     #     limits=(None, 3)
