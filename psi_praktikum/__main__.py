@@ -227,7 +227,6 @@ def main():
     mjaf.logging.set_handlers(
         logger_name='psi_praktikum',
     )
-    print('---Starting---')
 
     # fit_data(
     #     "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
@@ -251,8 +250,9 @@ def main():
     #     ]
     # )
 
-    print('---Done---')
 
 
 if __name__ == '__main__':
+    print('---Starting---')
     main()
+    print('---Done---')
