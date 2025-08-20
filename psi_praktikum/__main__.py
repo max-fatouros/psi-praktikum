@@ -1,21 +1,21 @@
 """
 # psi-praktikum
 """
+import logging
+
+import matplotlib.pyplot as plt
 import mjaf
+import numpy as np
+import scipy
 
 mjaf.logging.set_handlers(
     logger_name='psi_praktikum',
 )
 
-
-import logging
-
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy
-
-from psi_praktikum._utils import paths
-from psi_praktikum._utils.constants import *
+from psi_praktikum._utils import (
+    constants,
+    paths,
+)
 
 log = logging.getLogger(__name__)
 
@@ -65,7 +65,7 @@ def parse_data(filename: str):
 
 
 def fit_simulated(N_0):
-    samples = sample_double_exponential(N_0, T_MU, T_PI)
+    samples = sample_double_exponential(N_0, constants.T_MU, constants.T_PI)
 
     samples = samples[samples < 1e-5]
     samples = samples[1e-15 < samples]
@@ -100,7 +100,7 @@ def fit_simulated(N_0):
     plt.bar(xs, hist, 0.8 * (bin_edges[1:] - bin_edges[:-1]))
 
     # ts = np.linspace(0, 1e-5, num=10_000)
-    # true_data = 500 * double_exponential(ts, T_MU, T_PI)
+    # true_data = 500 * double_exponential(ts, constants.T_MU, constants.T_PI)
     # hist, bin_edges = np.histogram(true_data, )
     # plt.scatter(ts, true_data)
 
