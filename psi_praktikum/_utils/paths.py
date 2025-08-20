@@ -8,8 +8,8 @@ PROJECT_ROOT = path
 
 UTIL_DIR = Path(__file__).parent
 
-LOG_DIR = PROJECT_ROOT / 'logs'
-LOG_DIR.mkdir(parents=True, exist_ok=True)
+# LOG_DIR = PROJECT_ROOT / 'logs'
+# LOG_DIR.mkdir(parents=True, exist_ok=True)
 
 
 DATA_DIR = PROJECT_ROOT / 'data'
