@@ -114,10 +114,8 @@ def fit_simulated(N_0):
 def fit_data(filename):
     data = parse_data(filename)
 
-    bin_edges = bin_edges
-
     bin_edges = range(len(data) + 1)
-    bin_edge_times = linear_fit(bin_edges, constants.P_1, constants.P_2)
+    bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
     times = bin_edge_times[:-1]
 
     plt.bar(
@@ -125,18 +123,20 @@ def fit_data(filename):
         data,
         0.8 * (bin_edge_times[1:] - bin_edge_times[:-1]),
     )
-
     plt.xlabel('Decay time [microseconds]')
 
     popt, pcov = scipy.optimize.curve_fit(
         double_exponential,
-        np.array(times),
-        np.array(data) / np.sum(data),
+        times,
+        data / np.sum(data),
+        bounds=(
+            (0, 0),
+            (np.inf, np.inf),
+        ),
     )
 
     print(popt)
 
-    plt.show()
 
 
 def smooth_peaks(data, sigma=10):
