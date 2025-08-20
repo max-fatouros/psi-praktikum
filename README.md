@@ -11,7 +11,10 @@ pip install -e .
 
 
 ## Usage
-### As a script
+
+Add functions to the `psi_praktikum/__main__.py`  file, then run those function in one of two ways.
+
+### 1. As a script
 Run
 
 ``` bash
@@ -20,7 +23,8 @@ python -m psi_praktikum
 
 This will execute the `main()` function in the `psi_praktikum/__main__.py` file.
 
-### In a Jupyter notebook
+
+### 2. In a Jupyter notebook
 See the example in [`notebooks/example.ipynb`](notebooks/example.ipynb)
 
 
