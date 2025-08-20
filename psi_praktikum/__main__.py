@@ -16,8 +16,10 @@ from psi_praktikum._utils import (
     constants,
     paths,
 )
+from psi_praktikum._utils.mplstyles import PAPER
 
 log = logging.getLogger(__name__)
+plt.style.use(PAPER)
 
 
 # plt.rcParams['text.usetex'] = True
