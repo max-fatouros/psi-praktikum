@@ -50,7 +50,7 @@ def sample_double_exponential(N_0, t_mu, t_pi):
     )
 
 
-def parse_data(filename: str):
+def parse_data(filename: str) -> np.ndarray:
     """
     Parses the data from the *.Spe files.
     Returns a numpy array.
