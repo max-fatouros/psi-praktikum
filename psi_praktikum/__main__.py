@@ -150,7 +150,12 @@ def find_peaks(data):
 
 def linear_fit(X, Y) -> np.ndarray:
     """
+    Fits the curve
     AP = Y
+    where A = [X, [1,...,1]]
+
+    Returns:
+        P = [p_1, p_2]
     """
     A = np.vstack([X, np.ones(len(X))]).T
     P = np.linalg.inv(A.T @ A) @ A.T @ Y
@@ -164,11 +169,22 @@ def apply_fit(X, p_1, p_2):
 
 
 def fit_calibration(
-    path,
+    filename,
     times,
     visualize=False,
-):
-    data = parse_data(path)
+) -> np.ndarray:
+    """
+    Calibrates the signal from the time-to-digital converter (TDC).
+
+    Args:
+        filename: name of the calibration file.
+        times: the known time differences fed into the TDC.
+        visualize: wether or not to make plots along the way.
+
+    Returns:
+        The parameters of the fit, ordered from highest to lowest polynomial order.
+    """
+    data = parse_data(filename)
     data = smooth_peaks(data)
     bin_numbers = np.arange(0, len(data))
     peak_bin_indices = find_peaks(data)
