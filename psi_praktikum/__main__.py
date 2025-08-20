@@ -184,6 +184,10 @@ def fit_calibration(
         )
         plt.xlabel('bin number')
         plt.ylabel('counts')
+        plt.xlim(
+            1.2 * min(peak_bin_indices),
+            (1 / 1.2) * max(peak_bin_indices),
+        )
         plt.show()
 
     parameters = linear_fit(peak_bin_indices, times)
