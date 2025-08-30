@@ -25,9 +25,9 @@ plt.style.use(PAPER)
 # plt.rcParams['text.usetex'] = True
 
 
-def double_exponential(t, t_mu, t_pi):
+def double_exponential(t, N_0, t_mu, t_pi):
     t_shifted = t
-    return (
+    return N_0 * (
         np.exp(- (t_shifted / t_mu))
         - np.exp(- (t_shifted / t_pi))
     )
@@ -46,7 +46,7 @@ def sample_double_exponential(N_0, t_mu, t_pi):
     """
     return (
         np.random.exponential(t_mu, N_0)
-        - np.random.exponential(t_pi, N_0)
+        + np.random.exponential(t_pi, N_0)
     )
 
 
@@ -69,36 +69,27 @@ def parse_data(filename: str) -> np.ndarray:
 def fit_simulated(N_0):
     samples = sample_double_exponential(N_0, constants.T_MU, constants.T_PI)
 
-    samples = samples[samples < 1e-5]
-    samples = samples[1e-15 < samples]
+    # samples = samples[samples < 3e-6]
+    # samples = samples[1e-6 < samples]
 
-    hist, bin_edges = np.histogram(samples, 5000)
+    # TODO: set range explicitly
+    hist, bin_edges = np.histogram(samples, 8192)
     xs = (bin_edges[:-1] + bin_edges[1:]) / 2
 
-    # popt, pcov = scipy.optimize.curve_fit(
-    #     double_exponential,
-    #     xs,
-    #     hist,
-    #     p0=(1,1,1,1),
-    #     bounds=(
-    #         (0, 0, 0, 0),
-    #         (np.inf, np.inf, np.inf, np.inf)
-    #     )
-    # )
-
+    # TODO: give uncertainty in the y-values
+    #       (square root of the number of entries)
     popt, pcov = scipy.optimize.curve_fit(
         double_exponential,
         xs,
-        hist / (np.sum(hist) * (bin_edges[1] - bin_edges[0])),
-        # p0=(1,1),
+        hist,
+        # p0=(0,0,0),
         bounds=(
-            (0, 0),
-            (np.inf, np.inf),
-        ),
+            (0, 0, 0),
+            (np.inf, np.inf, np.inf)
+        )
     )
 
     print(f'{popt=}')
-
     plt.bar(xs, hist, 0.8 * (bin_edges[1:] - bin_edges[:-1]))
 
     # ts = np.linspace(0, 1e-5, num=10_000)
@@ -107,12 +98,12 @@ def fit_simulated(N_0):
     # plt.scatter(ts, true_data)
 
     # plt.plot(xs, double_exponential(xs, *popt))
-
     plt.show()
 
 
 def fit_data(filename):
-    data = parse_data(filename)
+    # TODO: cut the right hand overflow off
+    data = parse_data(filename)[100:-300]
 
     bin_edges = range(len(data) + 1)
     bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
@@ -128,14 +119,15 @@ def fit_data(filename):
     popt, pcov = scipy.optimize.curve_fit(
         double_exponential,
         times,
-        data / np.sum(data),
+        data,
         bounds=(
-            (0, 0),
-            (np.inf, np.inf),
+            (0, 0, 0, 0),
+            (np.inf, np.inf, np.inf, np.inf),
         ),
     )
 
     print(popt)
+    plt.show()
 
 
 
@@ -184,7 +176,7 @@ def fit_calibration(
     Returns:
         The parameters of the fit, ordered from highest to lowest polynomial order.
     """
-    data = parse_data(filename)
+    data = parse_data(ilename)
     data = smooth_peaks(data)
     bin_numbers = np.arange(0, len(data))
     peak_bin_indices = find_peaks(data)
@@ -200,10 +192,10 @@ def fit_calibration(
         )
         plt.xlabel('bin number')
         plt.ylabel('counts')
-        plt.xlim(
-            1.2 * min(peak_bin_indices),
-            (1 / 1.2) * max(peak_bin_indices),
-        )
+        # plt.xlim(
+        #     1.2 * min(peak_bin_indices),
+        #     (1 / 1.2) * max(peak_bin_indices),
+        # )
         plt.show()
 
     parameters = linear_fit(peak_bin_indices, times)
@@ -219,17 +211,17 @@ def fit_calibration(
         plt.xlabel('bin number')
         plt.ylabel('time [microseconds]')
         plt.show()
-
     return parameters
 
-
 def main():
+
+    print(">>> sim")
+    fit_simulated(1_000_000)
+
+    # print(">>> data")
     # fit_data(
     #     "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-    #     limits=(None, 3)
     # )
-
-    fit_simulated(250_000)
 
     # fit_calibration(
     #     "TimeCalibration_delaytrigger_05to7us.Spe",
