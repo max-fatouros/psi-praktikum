@@ -2,3 +2,16 @@
   date: 2025-08-17
   time: 11:00
   notes: first data
+
+
+# important ones
+# stop_S6andS7_delay_05_mus_fs12_50mm
+# stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7
+# stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat
+
+# some of the data are subsets of others.
+# look at the starting times.
+
+
+
+# can ignore the *delaytrigger.Spe
