@@ -102,7 +102,7 @@ def fit_simulated(
     ),
 ):
     samples = sample_double_exponential(N_0, constants.T_MU, constants.T_PI)
-    # samples += 1.75e-6
+    samples += 1.75e-6
     # samples += 25e-6
     # samples += np.random.normal(0, 0.1, N_0)
 
@@ -148,6 +148,7 @@ def fit_simulated(
     fit = scipy.optimize.dual_annealing(
         f,
         bounds=(
+            (0., 1e-5),
             (0., 1e10),
             (0., 1e-2),
             (0., 1e-5),
@@ -300,20 +301,20 @@ def fit_calibration(
 def main():
 
     print(">>> sim")
-    fit_simulated(
-        fit_function=ff3,
+    # fit_simulated(
+    #     fit_function=ff3,
         # bounds=(
         #     (0,0,0),
         #     (np.inf, np.inf, np.inf)
         # )
-    )
-    # fit_simulated(
-    #     fit_function=ff4a,
+    # )
+    fit_simulated(
+        fit_function=ff4a,
     #     bounds=(
     #         (0,0,0,0),
     #         (5e-6, np.inf, np.inf, np.inf)
     #     )
-    # )
+    )
 
     # print(">>> data")
     # fit_data(
