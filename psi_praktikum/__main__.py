@@ -59,22 +59,64 @@ def ff5(t, p0, t0, N0, t_mu, t_pi):
     return f2
 
 
-def ff(ts: np.ndarray, p0, p1, p2, p3, p4, t0, N0, t_mu, t_pi):
+def pexp(x):
+    return np.piecewise(x, x > 0, [0, np.exp])
+
+def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
     """
     The whole time-range must be passed,
     otherwise the convolutions probably won't work.
     """
-    ts = ts - t0
-    noise_gaussian = p0 * np.exp(-(ts**2) / (2 * p1**2))
+    t_shifted = ts - t0
+    # f1 = (
+    #     (
+    #         (1/2)
+    #         * pexp(
+    #             -(1/t_mu)
+    #             * (
+    #                 t_shifted
+    #                 - ((p1**2) / (2*t_mu))
+    #             )
+    #         )
+    #         * (
+    #             1
+    #             + scipy.special.erf(
+    #                 (t_shifted - ((p1**2)/t_mu))
+    #                 / (np.sqrt(2) * p1)
+    #             )
+    #         )
+    #     ) - (
+    #         (1/2)
+    #         * pexp(
+    #             -(1/t_pi)
+    #             * (
+    #                 t_shifted
+    #                 - ((p1**2)/(2*t_pi))
+    #             )
+    #         )
+    #         * (
+    #             1
+    #             + scipy.special.erf(
+    #                 (t_shifted - ((p1**2)/t_pi))
+    #                 / (np.sqrt(2) * p1)
+    #             )
+    #         )
+    #     )
+    # )
+
+
     double_exponential = N0 * (
-        np.exp(- (ts / t_mu))
-        - np.exp(- (ts / t_pi))
+        pexp(- (t_shifted / t_mu))
+        - pexp(- (t_shifted / t_pi))
     )
-    f1 = np.convolve(double_exponential, noise_gaussian, mode='same')
-    f2 = f1 + p2  # offset for random coincidences
-    hadronic_gaussian = p3 * np.exp(-(ts**2) / (2 * p4**2))
-    f3 = f2 + hadronic_gaussian
-    return f3
+    f1 = scipy.ndimage.gaussian_filter1d(double_exponential, p1)
+    return f1
+
+
+    # f2 = f1 + p2  # offset for random coincidences
+    # hadronic_gaussian = p3 * np.exp(-(t_shifted**2) / (2 * p4**2))
+    # f2 = f1 + hadronic_gaussian
+    # return f2
 
 def sample_double_exponential(N0, t_mu, t_pi):
     """
@@ -127,55 +169,68 @@ def fit_simulated(
 
 
     uniform_background = np.random.uniform(high=1e-5, size=N0 // 10)
-    # samples = np.hstack(
-    #     [
-    #         samples,
-    #         uniform_background,
-    #     ]
-    # )
-
-    # samples = samples[samples < 3e-6]
-    # samples = samples[1e-6 < samples]
+    samples = np.hstack(
+        [
+            samples,
+            uniform_background,
+        ]
+    )
 
     # TODO: set range explicitly
     # hist, bin_edges = np.histogram(samples, 8192)
-    hist, bin_edges = np.histogram(samples, 8192, range=(0, 1e-5))
-    hist = hist.astype(float)
-    # mean_uniform = np.mean(hist[:1300])
-    # hist -= mean_uniform
+    data, bin_edges = np.histogram(samples, 8192, range=(0, 1e-5))
+    data = data.astype(float)
 
-    hist = hist[1300:]
-    bin_edges = bin_edges[1300:]
 
-    xs = (bin_edges[:-1] + bin_edges[1:]) / 2
+    mean_background = np.mean(data[100:500])
+
+    cut = 1000
+    data = data[cut:]
+    bin_edges = bin_edges[cut:]
+    # bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
+    # bin_edge_times *= 1e6  # microseconds to seconds
+    times = bin_edges[:-1]
+
+
+    mask = data > 0
+    data = data[mask]
+    times = times[mask]
+    sigmas = 1/np.sqrt(data)
+
+    data -= mean_background
+
+
+    # data = scipy.ndimage.gaussian_filter1d(data, 5)
+
+
+
+    plt.bar(
+        times,
+        data,
+        0.8 * (bin_edges[1:][mask] - bin_edges[:-1][mask])
+    )
 
     # TODO: give uncertainty in the y-values
     #       (square root of the number of entries)
     # NOTE: the minimization method changes if you pass initial parameters (p0).
     #       I've had better luck by not setting it.
 
-    sigma = np.sqrt(
-        [
-            e if e != 0 else 1
-            for e in hist
-        ]
-    )
-
 
     # hist[hist==0] = np.nan
     # fhist -= mean_uniform
     # fhist[hist==0] = np.nan
-    # sigma = np.sqrt(fhist)
 
 
     # popt, pcov = scipy.optimize.curve_fit(
     #     fit_function,
     #     xs,
-    #     fhist,
-    #     bounds=bounds,
-    #     sigma=sigma,
-    #     nan_policy='omit',
+    #     hist,
+    #     p0=(1, 1e-5, 50, 0, 0),
+    #     # bounds=bounds,
+    #     # sigma=sigma,
+    #     # nan_policy='omit',
     # )
+    # print(popt)
 
 
     # fit = scipy.optimize.least_squares(
@@ -192,20 +247,31 @@ def fit_simulated(
     #     ),
     #     # maxiter=100_000
     # )
-    fit = scipy.optimize.dual_annealing(
-        chi_squared(fit_function, xs, hist),
-        bounds=bounds,
-        # maxiter=100_000
-    )
+    # fit = scipy.optimize.dual_annealing(
+    #     # chi_squared(fit_function, times, data),
+    #     chi_squared(fit_function, times, data, dys=sigmas),
+    #     bounds=bounds,
+    #     # maxiter=10_000,
+    # )
+    # fit = scipy.optimize.minimize(
+    #     chi_squared(fit_function, xs, hist, dys=sigmas),
+    #     x0=(24, 8.6e-6, 6.8e2, 4.6e-6, 5.12e-6),
+    # )
 
-    # print(fit.x)
+
 
     popt = fit.x
-    # print(f'{popt=}')
     print(fit)
-    plt.bar(xs, hist, 0.8 * (bin_edges[1:] - bin_edges[:-1]))
-    plt.plot(xs, fit_function(xs, *popt))
+    plt.plot(times, fit_function(times, *popt), color='red')
     plt.show()
+
+    plt.bar(
+        xs,
+        (fit_function(xs, *popt) - hist) / sigma,
+        0.8 * (bin_edges[1:] - bin_edges[:-1])
+    )
+
+    return popt
 
 
 def fit_data(
@@ -217,39 +283,62 @@ def fit_data(
     ),
 ):
     # TODO: cut the right hand overflow off
-    data = parse_data(filename)[:-200]
+    # data = parse_data(filename)[:-200]
+    data = parse_data(filename)[:-3000]
 
     bin_edges = range(len(data) + 1)
 
-    cut = 1000
+    data = data.astype(float)
+
+
+
+    mean_background = np.mean(data[100:1000])
+
+    cut = 200
     data = data[cut:]
     bin_edges = bin_edges[cut:]
     bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
+    bin_edge_times *= 1e-6  # microseconds to seconds
     times = bin_edge_times[:-1]
-    times *= 1e6  # microseconds to seconds
 
-    data = data.astype(float)
+    # mask = data > 0
+    # data = data[mask]
+    # times = times[mask]
+    # sigmas = 1/np.sqrt(data)
+    # sigmas = data**2
+
+    data -= mean_background
+
+
+
+
+
+    # data = scipy.ndimage.gaussian_filter1d(data, 5)
+
 
     plt.bar(
         times,
         data,
         0.8 * (bin_edge_times[1:] - bin_edge_times[:-1]),
+        # 0.8 * (bin_edge_times[1:][mask] - bin_edge_times[:-1][mask]),
     )
-    # plt.scatter(times, data)
     plt.xlabel('Decay time [microseconds]')
-    data = data.astype(float)
+    # plt.show()
+    # exit()
 
     fit = scipy.optimize.dual_annealing(
         chi_squared(fit_function, times, data),
+        # chi_squared(fit_function, times, data, dys=sigmas),
         bounds=bounds,
-        initial_temp=5230.0
     )
-    print(data[-200:])
 
     popt = fit.x
-    print(popt)
-    plt.plot(times, fit_function(times, *popt))
+    print(fit)
+    plt.plot(times, fit_function(times, *popt), color='red')
+    xs = np.linspace(0, 1e7)
+    # plt.plot(xs, fit_function(xs, 0,0,popt[-3],popt[-2],popt[-1]), color='red')
     plt.show()
+    return popt
 
 
 
@@ -341,27 +430,94 @@ def main():
 
     # print(">>> sim")
     # fit_simulated(
+    #     N0=1_000_000,
     #     fit_function=ff4a,
     #     bounds=(
-    #         # (0., 10),
-    #         (1e-6, 5e-6),
-    #         (0., 60),
-    #         (1e-10, 1e-5),
-    #         (1e-10, 1e-5),
+    #         (0., 1e-5),
+    #         (0., 1000),
+    #         (0, 1e-5),
+    #         (0, 1e-5),
+    #     ),
+    # )
+
+    # fit_simulated(
+    #     N0=1_000_000,
+    #     fit_function=ff4b,
+    #     bounds=(
+    #         (0., 5),
+    #         (0., 1000),
+    #         (0, 1e-5),
+    #         (0, 1e-5),
     #     ),
     # )
     # fit_simulated(
+    #     N0=1_000_000,
     #     fit_function=ff5,
-    #     # bounds=(
-    #     #     (0,0,0,0),
-    #     #     (5e-6, np.inf, np.inf, np.inf)
-    #     # )
+    #     bounds=(
+    #         (0., 30),
+    #         (1.5e-6, 1e-5),
+    #         (0., 1000),
+    #         (0, 1e-5),
+    #         (0, 1e-5),
+    #     ),
+    # )
+    # fit_data(
+    #     # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
+    #     "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
+    #     # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
+    #     fit_function=ff4a,
+    #     bounds=(
+    #         (0., 1e-5),
+    #         (0., 1000),
+    #         (0, 1e-5),
+    #         (0, 1e-5),
+    #     ),
+    # )
+    # exit()
+    # fit_simulated(
+    #     N0=1_000_000,
+    #     fit_function=ff,
+    #     bounds=(
+    #         (0., 100),  # time gaus sigma
+    #         # (0., 5),  # y shift
+    #         # (0., 50),  # hadronic gaus amplitude
+    #         # (0., 100),  # hadronic gaus sigma
+    #         (0, 1e-5),  # t0
+    #         (0., 1e3),  # N0
+    #         (0., 1e-5),  # t_mu
+    #         (0., 1e-7),  # t_pi
+    #     ),
     # )
 
+    # exit()
     print(">>> data")
+    # fit_data(
+    #     # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
+    #     "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
+    #     # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
+    #     fit_function=ff,
+    #     bounds=(
+    #         # (0, 10),
+    #         # (0, 1e-5),
+    #         # (0., 1e2),
+    #         # (0, 1e-2),
+    #         # (0, 1e-5),
+    #         (0., 100),  # time gaus sigma
+    #         # (0., 5),  # y shift
+    #         # (0., 50),  # hadronic gaus amplitude
+    #         # (0., 100),  # hadronic gaus sigma
+    #         (1e-6, 2e-6),  # t0
+    #         (0., 1e3),  # N0
+    #         (0., 1e-5),  # t_mu
+    #         (0., 1e-7),  # t_pi
+    #     ),
+    # )
+
+    # exit()
+
     fit_data(
-        # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-        "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
+        "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
+        # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
         # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
         fit_function=ff,
         bounds=(
@@ -370,17 +526,17 @@ def main():
             # (0., 1e2),
             # (0, 1e-2),
             # (0, 1e-5),
-            (0., 10),  # time gaus amplitude
             (0., 100),  # time gaus sigma
-            (0., 2),  # y shift
-            (0., 20),  # hadronic gaus amplitude
-            (0., 100),  # hadronic gaus sigma
-            (0., 1e-5),  # t0
-            (0., 1e10),  # N0
+            # (0., 5),  # y shift
+            # (0., 100),  # hadronic gaus amplitude
+            # (0., 100),  # hadronic gaus sigma
+            (0, 5e-6),  # t0
+            (0., 100),  # N0
             (0., 1e-5),  # t_mu
-            (0., 1e-6),  # t_pi
+            (0., 1e-5),  # t_pi
         ),
     )
+
 
     # fit_calibration(
     #     "TimeCalibration_delaytrigger_05to7us.Spe",
