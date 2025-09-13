@@ -25,6 +25,13 @@ plt.style.use(PAPER)
 # plt.rcParams['text.usetex'] = True
 
 
+def double_exponential_function(N0, t_mu, t_pi):
+    return lambda t: N0 * (
+        np.exp(- (t / t_mu))
+        - np.exp(- (t / t_pi))
+    )
+
+
 def ff3(t, N0, t_mu, t_pi):
     t_shifted = t
     return N0 * (
@@ -109,6 +116,10 @@ def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
         pexp(- (t_shifted / t_mu))
         - pexp(- (t_shifted / t_pi))
     )
+
+    # double_exponential = double_exponential_function(N0, t_mu, t_pi)
+    # f0 = np.piecewise(t_shifted, t_shifted > 0, [0, double_exponential])
+
     f1 = scipy.ndimage.gaussian_filter1d(double_exponential, p1)
     return f1
 
@@ -176,10 +187,14 @@ def fit_simulated(
         ]
     )
 
+
     # TODO: set range explicitly
     # hist, bin_edges = np.histogram(samples, 8192)
     data, bin_edges = np.histogram(samples, 8192, range=(0, 1e-5))
     data = data.astype(float)
+
+
+    data = scipy.ndimage.gaussian_filter1d(data, 3)
 
 
     mean_background = np.mean(data[100:500])
@@ -192,10 +207,10 @@ def fit_simulated(
     times = bin_edges[:-1]
 
 
-    mask = data > 0
-    data = data[mask]
-    times = times[mask]
-    sigmas = 1/np.sqrt(data)
+    # mask = data > 0
+    # data = data[mask]
+    # times = times[mask]
+    # sigmas = 1/np.sqrt(data)
 
     data -= mean_background
 
@@ -203,11 +218,10 @@ def fit_simulated(
     # data = scipy.ndimage.gaussian_filter1d(data, 5)
 
 
-
     plt.bar(
         times,
         data,
-        0.8 * (bin_edges[1:][mask] - bin_edges[:-1][mask])
+        0.8 * (bin_edges[1:] - bin_edges[:-1])
     )
 
     # TODO: give uncertainty in the y-values
@@ -247,12 +261,12 @@ def fit_simulated(
     #     ),
     #     # maxiter=100_000
     # )
-    # fit = scipy.optimize.dual_annealing(
-    #     # chi_squared(fit_function, times, data),
-    #     chi_squared(fit_function, times, data, dys=sigmas),
-    #     bounds=bounds,
-    #     # maxiter=10_000,
-    # )
+    fit = scipy.optimize.dual_annealing(
+        chi_squared(fit_function, times, data),
+        # chi_squared(fit_function, times, data, dys=sigmas),
+        bounds=bounds,
+        # maxiter=10_000,
+    )
     # fit = scipy.optimize.minimize(
     #     chi_squared(fit_function, xs, hist, dys=sigmas),
     #     x0=(24, 8.6e-6, 6.8e2, 4.6e-6, 5.12e-6),
@@ -266,10 +280,11 @@ def fit_simulated(
     plt.show()
 
     plt.bar(
-        xs,
-        (fit_function(xs, *popt) - hist) / sigma,
+        times,
+        (fit_function(times, *popt) - data),
         0.8 * (bin_edges[1:] - bin_edges[:-1])
     )
+    plt.show()
 
     return popt
 
@@ -305,7 +320,11 @@ def fit_data(
     # data = data[mask]
     # times = times[mask]
     # sigmas = 1/np.sqrt(data)
-    # sigmas = data**2
+    sigmas = np.array([
+        1 / np.sqrt(e)
+        if e > 0 else 1
+        for e in data
+    ])
 
     data -= mean_background
 
@@ -331,14 +350,36 @@ def fit_data(
         # chi_squared(fit_function, times, data, dys=sigmas),
         bounds=bounds,
     )
-
-    popt = fit.x
     print(fit)
-    plt.plot(times, fit_function(times, *popt), color='red')
-    xs = np.linspace(0, 1e7)
+    # popt, pcov = scipy.optimize.curve_fit(
+    #     fit_function,
+    #     times,
+    #     data,
+    #     # p0=(1, 1e-5, 50, 0, 0),
+    #     p0=fit.x,
+    #     # sigma=sigmas,
+    #     nan_policy='omit',
+    # )
+
+    # popt = fit.x
+    # print(popt)
+    # print(pcov)
+    plt.plot(times, fit_function(times, *fit.x), color='red')
+    # plt.plot(times, fit_function(times, *popt), color='green')
+    # xs = np.linspace(0, 1e7)
     # plt.plot(xs, fit_function(xs, 0,0,popt[-3],popt[-2],popt[-1]), color='red')
     plt.show()
-    return popt
+
+
+    plt.bar(
+        times,
+        (fit_function(times, *fit.x) - data),
+        0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
+    )
+    plt.show()
+
+
+    return fit.x
 
 
 
