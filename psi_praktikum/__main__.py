@@ -388,8 +388,6 @@ def fit_data(
     plt.plot(times, fit_function(times, *fit.x), color='red')
     plt.show()
 
-
-
     # chi_squared
 
 
