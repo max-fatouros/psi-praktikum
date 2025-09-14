@@ -296,6 +296,7 @@ def fit_data(
         (0,0,-np.inf,0, 0,0,0,0),
         (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)
     ),
+    maxiter=1000,
 ):
     # TODO: cut the right hand overflow off
     # data = parse_data(filename)[:-200]
@@ -321,7 +322,8 @@ def fit_data(
     # times = times[mask]
     # sigmas = 1/np.sqrt(data)
     sigmas = np.array([
-        1 / np.sqrt(e)
+        # 1 / np.sqrt(e)
+        np.sqrt(e)
         if e > 0 else 1
         for e in data
     ])
@@ -341,16 +343,38 @@ def fit_data(
         0.8 * (bin_edge_times[1:] - bin_edge_times[:-1]),
         # 0.8 * (bin_edge_times[1:][mask] - bin_edge_times[:-1][mask]),
     )
-    plt.xlabel('Decay time [microseconds]')
+    plt.xlabel('Decay time [seconds]')
     # plt.show()
     # exit()
 
     fit = scipy.optimize.dual_annealing(
-        chi_squared(fit_function, times, data),
-        # chi_squared(fit_function, times, data, dys=sigmas),
+        # chi_squared(fit_function, times, data),
+        chi_squared(fit_function, times, data, dys=sigmas),
         bounds=bounds,
+        maxiter=maxiter
     )
     print(fit)
+
+
+    hess = scipy.optimize.approx_fprime(
+        fit.x,
+        lambda p: scipy.optimize.approx_fprime(
+            p,
+            chi_squared(fit_function, times, data, dys=sigmas),
+        ),
+    )
+    # hess = scipy.differentiate.hessian(chi_squared(fit_function, times, data), fit.x)
+    # print(hess)
+
+
+    variance_of_residuals = np.sum(
+        chi_squared(fit_function, times, data, dys=sigmas)(fit.x)**2
+    ) / (len(times) - 1)
+
+    covariance = np.linalg.inv(hess) * variance_of_residuals
+    uncertainties = np.sqrt(np.diag(covariance))
+    print(uncertainties)
+
     # popt, pcov = scipy.optimize.curve_fit(
     #     fit_function,
     #     times,
@@ -361,24 +385,26 @@ def fit_data(
     #     nan_policy='omit',
     # )
 
-    # popt = fit.x
-    # print(popt)
-    # print(pcov)
     plt.plot(times, fit_function(times, *fit.x), color='red')
-    # plt.plot(times, fit_function(times, *popt), color='green')
-    # xs = np.linspace(0, 1e7)
-    # plt.plot(xs, fit_function(xs, 0,0,popt[-3],popt[-2],popt[-1]), color='red')
     plt.show()
 
 
-    plt.bar(
-        times,
-        (fit_function(times, *fit.x) - data),
-        0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
-    )
-    plt.show()
+
+    # chi_squared
 
 
+    # plt.bar(
+    #     times,
+    #     (fit_function(times, *fit.x) - data),
+    #     0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
+    # )
+    # plt.show()
+    # plt.bar(
+    #     times,
+    #     (fit_function(times, *fit.x) - data) / sigmas,
+    #     0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
+    # )
+    # plt.show()
     return fit.x
 
 
@@ -474,56 +500,13 @@ def fit_calibration(
         plt.ylabel('time [microseconds]')
         plt.show()
 
-    return parameters
+
+
+
+
+    return parameters, uncertainties
 
 def main():
-
-    # print(">>> sim")
-    # fit_simulated(
-    #     N0=1_000_000,
-    #     fit_function=ff4a,
-    #     bounds=(
-    #         (0., 1e-5),
-    #         (0., 1000),
-    #         (0, 1e-5),
-    #         (0, 1e-5),
-    #     ),
-    # )
-
-    # fit_simulated(
-    #     N0=1_000_000,
-    #     fit_function=ff4b,
-    #     bounds=(
-    #         (0., 5),
-    #         (0., 1000),
-    #         (0, 1e-5),
-    #         (0, 1e-5),
-    #     ),
-    # )
-    # fit_simulated(
-    #     N0=1_000_000,
-    #     fit_function=ff5,
-    #     bounds=(
-    #         (0., 30),
-    #         (1.5e-6, 1e-5),
-    #         (0., 1000),
-    #         (0, 1e-5),
-    #         (0, 1e-5),
-    #     ),
-    # )
-    # fit_data(
-    #     # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-    #     "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
-    #     # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
-    #     fit_function=ff4a,
-    #     bounds=(
-    #         (0., 1e-5),
-    #         (0., 1000),
-    #         (0, 1e-5),
-    #         (0, 1e-5),
-    #     ),
-    # )
-    # exit()
     # fit_simulated(
     #     N0=1_000_000,
     #     fit_function=ff,
@@ -538,36 +521,10 @@ def main():
     #         (0., 1e-7),  # t_pi
     #     ),
     # )
-
-    # exit()
     print(">>> data")
-    # fit_data(
-    #     # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-    #     "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
-    #     # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
-    #     fit_function=ff,
-    #     bounds=(
-    #         # (0, 10),
-    #         # (0, 1e-5),
-    #         # (0., 1e2),
-    #         # (0, 1e-2),
-    #         # (0, 1e-5),
-    #         (0., 100),  # time gaus sigma
-    #         # (0., 5),  # y shift
-    #         # (0., 50),  # hadronic gaus amplitude
-    #         # (0., 100),  # hadronic gaus sigma
-    #         (1e-6, 2e-6),  # t0
-    #         (0., 1e3),  # N0
-    #         (0., 1e-5),  # t_mu
-    #         (0., 1e-7),  # t_pi
-    #     ),
-    # )
-
-    # exit()
-
     fit_data(
-        "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-        # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
+        # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
+        "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
         # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
         fit_function=ff,
         bounds=(
@@ -585,24 +542,26 @@ def main():
             (0., 1e-5),  # t_mu
             (0., 1e-5),  # t_pi
         ),
-    parameters, uncertainties = fit_calibration(
-        "TimeCalibration_delaytrigger_05to7us.Spe",
-        times = [
-            0.5,
-            1,
-            1.5,
-            2,
-            3,
-            4,
-            5,
-            6,
-            7,
-        ]
+        maxiter=100
     )
 
 
-    print(f'{parameters=}')
-    print(f'{uncertainties=}')
+    # parameters, uncertainties = fit_calibration(
+    #     "TimeCalibration_delaytrigger_05to7us.Spe",
+    #     times = 1e-6 * np.array([
+    #         0.5,
+    #         1,
+    #         1.5,
+    #         2,
+    #         3,
+    #         4,
+    #         5,
+    #         6,
+    #         7,
+    #     ])
+    # )
+    # print(f'{parameters=}')
+    # print(f'{uncertainties=}')
 
 
 
