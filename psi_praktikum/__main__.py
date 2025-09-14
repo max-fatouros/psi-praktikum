@@ -201,7 +201,6 @@ def fit_simulated(
     cut = 1000
     data = data[cut:]
     bin_edges = bin_edges[cut:]
-    # bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
     times = bin_edges[:-1]
 
     data -= mean_background
@@ -211,51 +210,14 @@ def fit_simulated(
         data,
         0.8 * (bin_edges[1:] - bin_edges[:-1]),
     )
+    plt.xlabel('Decay time [seconds]')
+    plt.ylabel('Counts')
+    plt.show()
 
-    # TODO: give uncertainty in the y-values
-    #       (square root of the number of entries)
-    # NOTE: the minimization method changes if you pass initial parameters (p0).
-    #       I've had better luck by not setting it.
-
-    # hist[hist==0] = np.nan
-    # fhist -= mean_uniform
-    # fhist[hist==0] = np.nan
-
-    # popt, pcov = scipy.optimize.curve_fit(
-    #     fit_function,
-    #     xs,
-    #     hist,
-    #     p0=(1, 1e-5, 50, 0, 0),
-    #     # bounds=bounds,
-    #     # sigma=sigma,
-    #     # nan_policy='omit',
-    # )
-    # print(popt)
-
-    # fit = scipy.optimize.least_squares(
-    #     lambda p: fit_function(xs, *p) - fhist,
-    #     (2e-6,1,1e-6,1e-6),
-    #     bounds=(
-    #         (1e-6, 0, 1e-10, 1e-10),
-    #         (5e-6, 1e3, 1e-5, 1e-5),
-    #         # (0., 10),
-    #         # (1e-6, 5e-6),
-    #         # (0., 1e3),
-    #         # (1e-10, 1e-5),
-    #         # (1e-10, 1e-5),
-    #     ),
-    #     # maxiter=100_000
-    # )
     fit = scipy.optimize.dual_annealing(
         sum_of_squared_residuals(fit_function, times, data),
-        # sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
         bounds=bounds,
-        # maxiter=10_000,
     )
-    # fit = scipy.optimize.minimize(
-    #     sum_of_squared_residuals(fit_function, xs, hist, dys=sigmas),
-    #     x0=(24, 8.6e-6, 6.8e2, 4.6e-6, 5.12e-6),
-    # )
 
     popt = fit.x
     print(fit)
@@ -314,6 +276,7 @@ def fit_data(
         # 0.8 * (bin_edge_times[1:][mask] - bin_edge_times[:-1][mask]),
     )
     plt.xlabel('Decay time [seconds]')
+    plt.ylabel('Counts')
     # plt.show()
     # exit()
 
