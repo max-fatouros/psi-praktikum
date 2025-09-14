@@ -402,8 +402,17 @@ def linear_fit(X, Y) -> np.ndarray:
         P = [p_1, p_2]
     """
     A = np.vstack([X, np.ones(len(X))]).T
-    P = np.linalg.inv(A.T @ A) @ A.T @ Y
-    return P
+    # P = np.linalg.inv(A.T @ A) @ A.T @ Y
+
+
+    P, variance, rank, s = np.linalg.lstsq(A, Y, rcond=None)
+
+    residual_variance = variance[0] / (len(X) - 2)
+
+    covariance = residual_variance * np.linalg.inv(A.T @ A)
+    uncertainties = np.sqrt(np.diag(covariance))
+
+    return P, uncertainties
 
 
 def apply_fit(X, p_1, p_2):
@@ -451,7 +460,7 @@ def fit_calibration(
         plt.show()
 
     # TODO: find error
-    parameters = linear_fit(peak_bin_indices, times)
+    parameters, uncertainties = linear_fit(peak_bin_indices, times)
 
     if visualize:
         plt.scatter(peak_bin_indices, times)
@@ -576,23 +585,24 @@ def main():
             (0., 1e-5),  # t_mu
             (0., 1e-5),  # t_pi
         ),
+    parameters, uncertainties = fit_calibration(
+        "TimeCalibration_delaytrigger_05to7us.Spe",
+        times = [
+            0.5,
+            1,
+            1.5,
+            2,
+            3,
+            4,
+            5,
+            6,
+            7,
+        ]
     )
 
 
-    # fit_calibration(
-    #     "TimeCalibration_delaytrigger_05to7us.Spe",
-    #     times = [
-    #         0.5,
-    #         1,
-    #         1.5,
-    #         2,
-    #         3,
-    #         4,
-    #         5,
-    #         6,
-    #         7,
-    #     ]
-    # )
+    print(f'{parameters=}')
+    print(f'{uncertainties=}')
 
 
 
