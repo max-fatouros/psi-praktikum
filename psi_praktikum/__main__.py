@@ -69,65 +69,56 @@ def ff5(t, p0, t0, N0, t_mu, t_pi):
 def pexp(x):
     return np.piecewise(x, x > 0, [0, np.exp])
 
-def ff(ts: np.ndarray, p1, p2, t0, N0, t_mu, t_pi):
+def convolved_double_exponential(ts, t_mu, t_pi, sigma):
+    return (
+        (
+            (1/2)
+            * pexp(
+                -(1/t_mu)
+                * (
+                    ts
+                    - ((sigma**2) / (2*t_mu))
+                )
+            )
+            * (
+                1
+                + scipy.special.erf(
+                    (ts - ((sigma**2)/t_mu))
+                    / (np.sqrt(2) * sigma)
+                )
+            )
+        ) - (
+            (1/2)
+            * pexp(
+                -(1/t_pi)
+                * (
+                    ts
+                    - ((sigma**2)/(2*t_pi))
+                )
+            )
+            * (
+                1
+                + scipy.special.erf(
+                    (ts - ((sigma**2)/t_pi))
+                    / (np.sqrt(2) * sigma)
+                )
+            )
+        )
+    )
+
+def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
     """
     The whole time-range must be passed,
     otherwise the convolutions probably won't work.
     """
     t_shifted = ts - t0
-    # f1 = (
-    #     (
-    #         (1/2)
-    #         * pexp(
-    #             -(1/t_mu)
-    #             * (
-    #                 t_shifted
-    #                 - ((p1**2) / (2*t_mu))
-    #             )
-    #         )
-    #         * (
-    #             1
-    #             + scipy.special.erf(
-    #                 (t_shifted - ((p1**2)/t_mu))
-    #                 / (np.sqrt(2) * p1)
-    #             )
-    #         )
-    #     ) - (
-    #         (1/2)
-    #         * pexp(
-    #             -(1/t_pi)
-    #             * (
-    #                 t_shifted
-    #                 - ((p1**2)/(2*t_pi))
-    #             )
-    #         )
-    #         * (
-    #             1
-    #             + scipy.special.erf(
-    #                 (t_shifted - ((p1**2)/t_pi))
-    #                 / (np.sqrt(2) * p1)
-    #             )
-    #         )
-    #     )
-    # )
-
-
     double_exponential = N0 * (
         pexp(- (t_shifted / t_mu))
         - pexp(- (t_shifted / t_pi))
     )
-
-    # double_exponential = double_exponential_function(N0, t_mu, t_pi)
-    # f0 = np.piecewise(t_shifted, t_shifted > 0, [0, double_exponential])
-
     f1 = scipy.ndimage.gaussian_filter1d(double_exponential, p1)
-
-    f2 = f1 + p2 * np.exp(- t_shifted**2 / (2 * p2**2) )
-    return f2
-
-
-    # f2 = f1 + p2  # offset for random coincidences
-    # hadronic_gaussian = p3 * np.exp(-(t_shifted**2) / (2 * p4**2))
+    return f1
+    # hadronic_gaussian = p2 * np.exp(- t_shifted**2 / (2 * p1**2))
     # f2 = f1 + hadronic_gaussian
     # return f2
 
@@ -147,7 +138,6 @@ def parse_data(filename: str) -> np.ndarray:
     Returns a numpy array.
     """
     output = []
-
     path = paths.DATA_DIR / filename
     with open(path) as f:
         for line in f.readlines()[12:-16]:
@@ -168,13 +158,12 @@ def sum_of_squared_residuals(fit_function, xs, ys, dys=None):
 
 def get_reduced_chi_squared(fit_function, parameters, xs, ys):
     fit = fit_function(xs, *parameters)
-    # mask = fit != 0
-    # fit = fit[mask]
-    # ys = ys[mask]
+    mask = fit != 0
+    fit = fit[mask]
+    ys = ys[mask]
     residuals = ys - fit
     residuals /= np.sqrt(np.maximum(fit, 1))
     return np.sum(residuals**2) / (len(ys) - len(parameters))
-
 
 
 def fit_simulated(
@@ -188,8 +177,6 @@ def fit_simulated(
     samples = sample_double_exponential(N0, constants.T_MU, constants.T_PI)
     samples += 1.75e-6
 
-
-
     uniform_background = np.random.uniform(high=1e-5, size=N0 // 10)
     samples = np.hstack(
         [
@@ -198,15 +185,10 @@ def fit_simulated(
         ]
     )
 
-
-    # TODO: set range explicitly
-    # hist, bin_edges = np.histogram(samples, 8192)
     data, bin_edges = np.histogram(samples, 8192, range=(0, 1e-5))
     data = data.astype(float)
 
-
     data = scipy.ndimage.gaussian_filter1d(data, 3)
-
 
     mean_background = np.mean(data[100:500])
 
@@ -214,20 +196,10 @@ def fit_simulated(
     data = data[cut:]
     bin_edges = bin_edges[cut:]
     # bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
-    # bin_edge_times *= 1e6  # microseconds to seconds
     times = bin_edges[:-1]
 
 
-    # mask = data > 0
-    # data = data[mask]
-    # times = times[mask]
-    # sigmas = 1/np.sqrt(data)
-
     data -= mean_background
-
-
-    # data = scipy.ndimage.gaussian_filter1d(data, 5)
-
 
     plt.bar(
         times,
@@ -512,14 +484,12 @@ def main():
     #     N0=1_000_000,
     #     fit_function=ff,
     #     bounds=(
-    #         (0., 100),  # time gaus sigma
-    #         # (0., 5),  # y shift
-    #         # (0., 50),  # hadronic gaus amplitude
-    #         # (0., 100),  # hadronic gaus sigma
-    #         (0, 1e-5),  # t0
-    #         (0., 1e3),  # N0
-    #         (0., 1e-5),  # t_mu
-    #         (0., 1e-7),  # t_pi
+            # (0., 100),  # time gaus sigma
+            # (0., 100),  # hadronic gaus amplitude
+            # (0, 5e-6),  # t0
+            # (0., 100),  # N0
+            # (0., 1),  # t_mu
+            # (0., 1),  # t_pi
     #     ),
     # )
     print(">>> data")
@@ -529,24 +499,15 @@ def main():
         # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
         fit_function=ff,
         bounds=(
-            # (0, 10),
-            # (0, 1e-5),
-            # (0., 1e2),
-            # (0, 1e-2),
-            # (0, 1e-5),
             (0., 100),  # time gaus sigma
-            # (0., 5),  # y shift
-            (0., 100),  # hadronic gaus amplitude
-            # (0., 100),  # hadronic gaus sigma
             (0, 5e-6),  # t0
             (0., 100),  # N0
-            (0., 1e-5),  # t_mu
-            (0., 1e-5),  # t_pi
+            (0., 1),  # t_mu
+            (0., 1),  # t_pi
         ),
         # maxiter=100
     )
-
-
+    print(">>> calibration")
     # parameters, uncertainties = fit_calibration(
     #     "TimeCalibration_delaytrigger_05to7us.Spe",
     #     times = 1e-6 * np.array([
