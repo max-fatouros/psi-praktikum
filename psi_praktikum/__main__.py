@@ -69,7 +69,7 @@ def ff5(t, p0, t0, N0, t_mu, t_pi):
 def pexp(x):
     return np.piecewise(x, x > 0, [0, np.exp])
 
-def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
+def ff(ts: np.ndarray, p1, p2, t0, N0, t_mu, t_pi):
     """
     The whole time-range must be passed,
     otherwise the convolutions probably won't work.
@@ -121,7 +121,9 @@ def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
     # f0 = np.piecewise(t_shifted, t_shifted > 0, [0, double_exponential])
 
     f1 = scipy.ndimage.gaussian_filter1d(double_exponential, p1)
-    return f1
+
+    f2 = f1 + p2 * np.exp(- t_shifted**2 / (2 * p2**2) )
+    return f2
 
 
     # f2 = f1 + p2  # offset for random coincidences
@@ -155,14 +157,23 @@ def parse_data(filename: str) -> np.ndarray:
     return np.asarray(output)
 
 
-def chi_squared(fit_function, xs, ys, dys=None):
+def sum_of_squared_residuals(fit_function, xs, ys, dys=None):
     def residual(parameters):
-        residuals = fit_function(xs, *parameters) - ys
+        residuals = ys - fit_function(xs, *parameters)
         if dys is not None:
             residuals *= (1/dys)
         return np.sum(residuals**2)
-
     return residual
+
+
+def get_reduced_chi_squared(fit_function, parameters, xs, ys):
+    fit = fit_function(xs, *parameters)
+    # mask = fit != 0
+    # fit = fit[mask]
+    # ys = ys[mask]
+    residuals = ys - fit
+    residuals /= np.sqrt(np.maximum(fit, 1))
+    return np.sum(residuals**2) / (len(ys) - len(parameters))
 
 
 
@@ -262,13 +273,13 @@ def fit_simulated(
     #     # maxiter=100_000
     # )
     fit = scipy.optimize.dual_annealing(
-        chi_squared(fit_function, times, data),
-        # chi_squared(fit_function, times, data, dys=sigmas),
+        sum_of_squared_residuals(fit_function, times, data),
+        # sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
         bounds=bounds,
         # maxiter=10_000,
     )
     # fit = scipy.optimize.minimize(
-    #     chi_squared(fit_function, xs, hist, dys=sigmas),
+    #     sum_of_squared_residuals(fit_function, xs, hist, dys=sigmas),
     #     x0=(24, 8.6e-6, 6.8e2, 4.6e-6, 5.12e-6),
     # )
 
@@ -321,20 +332,10 @@ def fit_data(
     # data = data[mask]
     # times = times[mask]
     # sigmas = 1/np.sqrt(data)
-    sigmas = np.array([
-        # 1 / np.sqrt(e)
-        np.sqrt(e)
-        if e > 0 else 1
-        for e in data
-    ])
+    # sigmas = np.sqrt(np.maximum(data, 1))
+    sigmas = np.ones(len(data))
 
     data -= mean_background
-
-
-
-
-
-    # data = scipy.ndimage.gaussian_filter1d(data, 5)
 
 
     plt.bar(
@@ -348,8 +349,8 @@ def fit_data(
     # exit()
 
     fit = scipy.optimize.dual_annealing(
-        # chi_squared(fit_function, times, data),
-        chi_squared(fit_function, times, data, dys=sigmas),
+        # sum_of_squared_residuals(fit_function, times, data),
+        sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
         bounds=bounds,
         maxiter=maxiter
     )
@@ -360,15 +361,15 @@ def fit_data(
         fit.x,
         lambda p: scipy.optimize.approx_fprime(
             p,
-            chi_squared(fit_function, times, data, dys=sigmas),
+            sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
         ),
     )
-    # hess = scipy.differentiate.hessian(chi_squared(fit_function, times, data), fit.x)
+    # hess = scipy.differentiate.hessian(sum_of_squared_residuals(fit_function, times, data), fit.x)
     # print(hess)
 
 
     variance_of_residuals = np.sum(
-        chi_squared(fit_function, times, data, dys=sigmas)(fit.x)**2
+        sum_of_squared_residuals(fit_function, times, data, dys=sigmas)(fit.x)**2
     ) / (len(times) - 1)
 
     covariance = np.linalg.inv(hess) * variance_of_residuals
@@ -385,10 +386,12 @@ def fit_data(
     #     nan_policy='omit',
     # )
 
+    reduced_chi_squared = get_reduced_chi_squared(fit_function, fit.x, times, data)
+    print(f'{reduced_chi_squared=}')
+
     plt.plot(times, fit_function(times, *fit.x), color='red')
     plt.show()
 
-    # chi_squared
 
 
     # plt.bar(
@@ -533,14 +536,14 @@ def main():
             # (0, 1e-5),
             (0., 100),  # time gaus sigma
             # (0., 5),  # y shift
-            # (0., 100),  # hadronic gaus amplitude
+            (0., 100),  # hadronic gaus amplitude
             # (0., 100),  # hadronic gaus sigma
             (0, 5e-6),  # t0
             (0., 100),  # N0
             (0., 1e-5),  # t_mu
             (0., 1e-5),  # t_pi
         ),
-        maxiter=100
+        # maxiter=100
     )
 
 
