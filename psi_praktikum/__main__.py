@@ -39,6 +39,7 @@ def ff3(t, N0, t_mu, t_pi):
         - np.exp(- (t_shifted / t_pi))
     )
 
+
 def ff4a(t, t0, N0, t_mu, t_pi):
     t_shifted = t - t0
     f1 = N0 * (
@@ -46,6 +47,7 @@ def ff4a(t, t0, N0, t_mu, t_pi):
         - np.exp(- (t_shifted / t_pi))
     )
     return f1
+
 
 def ff4b(t, p0, N0, t_mu, t_pi):
     t_shifted = t
@@ -55,6 +57,7 @@ def ff4b(t, p0, N0, t_mu, t_pi):
     )
     f2 = f1 + p0
     return f2
+
 
 def ff5(t, p0, t0, N0, t_mu, t_pi):
     t_shifted = t - t0
@@ -69,42 +72,44 @@ def ff5(t, p0, t0, N0, t_mu, t_pi):
 def pexp(x):
     return np.piecewise(x, x > 0, [0, np.exp])
 
+
 def convolved_double_exponential(ts, t_mu, t_pi, sigma):
     return (
         (
-            (1/2)
+            (1 / 2)
             * pexp(
-                -(1/t_mu)
+                -(1 / t_mu)
                 * (
                     ts
-                    - ((sigma**2) / (2*t_mu))
-                )
+                    - ((sigma**2) / (2 * t_mu))
+                ),
             )
             * (
                 1
                 + scipy.special.erf(
-                    (ts - ((sigma**2)/t_mu))
-                    / (np.sqrt(2) * sigma)
+                    (ts - ((sigma**2) / t_mu))
+                    / (np.sqrt(2) * sigma),
                 )
             )
         ) - (
-            (1/2)
+            (1 / 2)
             * pexp(
-                -(1/t_pi)
+                -(1 / t_pi)
                 * (
                     ts
-                    - ((sigma**2)/(2*t_pi))
-                )
+                    - ((sigma**2) / (2 * t_pi))
+                ),
             )
             * (
                 1
                 + scipy.special.erf(
-                    (ts - ((sigma**2)/t_pi))
-                    / (np.sqrt(2) * sigma)
+                    (ts - ((sigma**2) / t_pi))
+                    / (np.sqrt(2) * sigma),
                 )
             )
         )
     )
+
 
 def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
     """
@@ -121,6 +126,7 @@ def ff(ts: np.ndarray, p1, t0, N0, t_mu, t_pi):
     # hadronic_gaussian = p2 * np.exp(- t_shifted**2 / (2 * p1**2))
     # f2 = f1 + hadronic_gaussian
     # return f2
+
 
 def sample_double_exponential(N0, t_mu, t_pi):
     """
@@ -151,7 +157,7 @@ def sum_of_squared_residuals(fit_function, xs, ys, dys=None):
     def residual(parameters):
         residuals = ys - fit_function(xs, *parameters)
         if dys is not None:
-            residuals *= (1/dys)
+            residuals *= (1 / dys)
         return np.sum(residuals**2)
     return residual
 
@@ -170,8 +176,8 @@ def fit_simulated(
     N0=100_000,
     fit_function=ff,
     bounds=(
-        (0,0,-np.inf,0, 0,0,0,0),
-        (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)
+        (0, 0, -np.inf, 0, 0, 0, 0, 0),
+        (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf),
     ),
 ):
     samples = sample_double_exponential(N0, constants.T_MU, constants.T_PI)
@@ -182,7 +188,7 @@ def fit_simulated(
         [
             samples,
             uniform_background,
-        ]
+        ],
     )
 
     data, bin_edges = np.histogram(samples, 8192, range=(0, 1e-5))
@@ -198,13 +204,12 @@ def fit_simulated(
     # bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
     times = bin_edges[:-1]
 
-
     data -= mean_background
 
     plt.bar(
         times,
         data,
-        0.8 * (bin_edges[1:] - bin_edges[:-1])
+        0.8 * (bin_edges[1:] - bin_edges[:-1]),
     )
 
     # TODO: give uncertainty in the y-values
@@ -212,11 +217,9 @@ def fit_simulated(
     # NOTE: the minimization method changes if you pass initial parameters (p0).
     #       I've had better luck by not setting it.
 
-
     # hist[hist==0] = np.nan
     # fhist -= mean_uniform
     # fhist[hist==0] = np.nan
-
 
     # popt, pcov = scipy.optimize.curve_fit(
     #     fit_function,
@@ -228,7 +231,6 @@ def fit_simulated(
     #     # nan_policy='omit',
     # )
     # print(popt)
-
 
     # fit = scipy.optimize.least_squares(
     #     lambda p: fit_function(xs, *p) - fhist,
@@ -255,8 +257,6 @@ def fit_simulated(
     #     x0=(24, 8.6e-6, 6.8e2, 4.6e-6, 5.12e-6),
     # )
 
-
-
     popt = fit.x
     print(fit)
     plt.plot(times, fit_function(times, *popt), color='red')
@@ -265,7 +265,7 @@ def fit_simulated(
     plt.bar(
         times,
         (fit_function(times, *popt) - data),
-        0.8 * (bin_edges[1:] - bin_edges[:-1])
+        0.8 * (bin_edges[1:] - bin_edges[:-1]),
     )
     plt.show()
 
@@ -276,8 +276,8 @@ def fit_data(
     filename,
     fit_function=ff,
     bounds=(
-        (0,0,-np.inf,0, 0,0,0,0),
-        (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf)
+        (0, 0, -np.inf, 0, 0, 0, 0, 0),
+        (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf),
     ),
     maxiter=1000,
 ):
@@ -288,8 +288,6 @@ def fit_data(
     bin_edges = range(len(data) + 1)
 
     data = data.astype(float)
-
-
 
     mean_background = np.mean(data[100:1000])
 
@@ -309,7 +307,6 @@ def fit_data(
 
     data -= mean_background
 
-
     plt.bar(
         times,
         data,
@@ -324,10 +321,9 @@ def fit_data(
         # sum_of_squared_residuals(fit_function, times, data),
         sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
         bounds=bounds,
-        maxiter=maxiter
+        maxiter=maxiter,
     )
     print(fit)
-
 
     hess = scipy.optimize.approx_fprime(
         fit.x,
@@ -339,9 +335,10 @@ def fit_data(
     # hess = scipy.differentiate.hessian(sum_of_squared_residuals(fit_function, times, data), fit.x)
     # print(hess)
 
-
     variance_of_residuals = np.sum(
-        sum_of_squared_residuals(fit_function, times, data, dys=sigmas)(fit.x)**2
+        sum_of_squared_residuals(
+            fit_function, times, data, dys=sigmas,
+        )(fit.x)**2,
     ) / (len(times) - 1)
 
     covariance = np.linalg.inv(hess) * variance_of_residuals
@@ -358,13 +355,13 @@ def fit_data(
     #     nan_policy='omit',
     # )
 
-    reduced_chi_squared = get_reduced_chi_squared(fit_function, fit.x, times, data)
+    reduced_chi_squared = get_reduced_chi_squared(
+        fit_function, fit.x, times, data,
+    )
     print(f'{reduced_chi_squared=}')
 
     plt.plot(times, fit_function(times, *fit.x), color='red')
     plt.show()
-
-
 
     # plt.bar(
     #     times,
@@ -379,7 +376,6 @@ def fit_data(
     # )
     # plt.show()
     return fit.x
-
 
 
 def smooth_peaks(data, sigma=10):
@@ -402,7 +398,6 @@ def linear_fit(X, Y) -> np.ndarray:
     """
     A = np.vstack([X, np.ones(len(X))]).T
     # P = np.linalg.inv(A.T @ A) @ A.T @ Y
-
 
     P, variance, rank, s = np.linalg.lstsq(A, Y, rcond=None)
 
@@ -473,29 +468,26 @@ def fit_calibration(
         plt.ylabel('time [microseconds]')
         plt.show()
 
-
-
-
-
     return parameters, uncertainties
+
 
 def main():
     # fit_simulated(
     #     N0=1_000_000,
     #     fit_function=ff,
     #     bounds=(
-            # (0., 100),  # time gaus sigma
-            # (0., 100),  # hadronic gaus amplitude
-            # (0, 5e-6),  # t0
-            # (0., 100),  # N0
-            # (0., 1),  # t_mu
-            # (0., 1),  # t_pi
+    # (0., 100),  # time gaus sigma
+    # (0., 100),  # hadronic gaus amplitude
+    # (0, 5e-6),  # t0
+    # (0., 100),  # N0
+    # (0., 1),  # t_mu
+    # (0., 1),  # t_pi
     #     ),
     # )
-    print(">>> data")
+    print('>>> data')
     fit_data(
         # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-        "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe",
+        'PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe',
         # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
         fit_function=ff,
         bounds=(
@@ -507,7 +499,7 @@ def main():
         ),
         # maxiter=100
     )
-    print(">>> calibration")
+    print('>>> calibration')
     # parameters, uncertainties = fit_calibration(
     #     "TimeCalibration_delaytrigger_05to7us.Spe",
     #     times = 1e-6 * np.array([
@@ -524,7 +516,6 @@ def main():
     # )
     # print(f'{parameters=}')
     # print(f'{uncertainties=}')
-
 
 
 if __name__ == '__main__':
