@@ -913,6 +913,7 @@ The real data followed a similar shape to our simulated data, except that the re
 The plot of the experimental data has a similar shape compared to the simulated one,
 confirming the nature of the measured data is correct. Achieving this results was particularly valuable, as a significant amount of time had been lost, duo to troubleshooting a setup error that led to invalid data. However the accuracy of the data still varies quite a lot . 
 The mean lifetime for a pion is $(2.6033 \pm 0.0005) \cdot 10^{-8} \text{ s}$ and for a muon $(2.1969811 \pm 0.0000022)\cdot 10^{-6} \text{ s} $, according to the particle data group (PDG)~\cite{Literature Values}. The results of the measurements along with their uncertainties are listed in \autoref{tab: Measurment results}.
+The fits to these measurements are shown in Figure~\ref{fig:data_fit}
 
 
 
@@ -943,6 +944,34 @@ The bin uncertainty from the time calibration is on the order of $10^{-9}$, and 
 Following a similar reasoning, the uncertainties given by the PDG can be ignored in the determination of the final agreement, as they are both of order $10^{-12}$.
 
 Therefore, we can state the agreements as shown in \autoref{tab:measurement_agreement}.
+
+
+\begin{figure}[h!]
+\centering
+\begin{subfigure}[t]{0.8\textwidth}
+\centering
+\includegraphics[width=\textwidth]{data_1.png}
+\caption{Fit to measurement 1.}
+\label{fig:data_1}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.8\textwidth}
+    \centering
+\includegraphics[width=\textwidth]{data_2.png}
+\caption{Fit to measurement 2.}
+\label{fig:data_2}
+\end{subfigure}
+\hfill
+\begin{subfigure}[t]{0.8\textwidth}
+    \centering
+\includegraphics[width=\textwidth]{data_3.png}
+\caption{Fit to measurement 3.}
+\label{fig:data_3}
+\end{subfigure}
+\caption{Fits to the measurments in whose results are shown in \autoref{tab: Measurment results} and \autoref{tab:measurement_agreement}.}
+\label{fig:data_fit}
+\end{figure}
+
 
 \begin{table}[ht!]
 \centering
