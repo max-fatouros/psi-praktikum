@@ -172,18 +172,13 @@ def get_reduced_chi_squared(fit_function, parameters, xs, ys):
     return np.sum(residuals**2) / (len(ys) - len(parameters))
 
 
-def fit_simulated(
+def get_simulated_data(
     N0=100_000,
-    fit_function=ff,
-    bounds=(
-        (0, 0, -np.inf, 0, 0, 0, 0, 0),
-        (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf),
-    ),
 ):
     samples = sample_double_exponential(N0, constants.T_MU, constants.T_PI)
     samples += 1.75e-6
 
-    uniform_background = np.random.uniform(high=1e-5, size=N0 // 10)
+    uniform_background = np.random.uniform(high=1e-5, size=N0)
     samples = np.hstack(
         [
             samples,
@@ -203,83 +198,62 @@ def fit_simulated(
     bin_edges = bin_edges[cut:]
     times = bin_edges[:-1]
 
+    sigmas = np.ones(len(data))
+
     data -= mean_background
-
-    plt.bar(
-        times,
-        data,
-        0.8 * (bin_edges[1:] - bin_edges[:-1]),
-    )
-    plt.xlabel('Decay time [seconds]')
-    plt.ylabel('Counts')
-    plt.show()
-
-    fit = scipy.optimize.dual_annealing(
-        sum_of_squared_residuals(fit_function, times, data),
-        bounds=bounds,
-    )
-
-    popt = fit.x
-    print(fit)
-    plt.plot(times, fit_function(times, *popt), color='red')
-    plt.show()
-
-    plt.bar(
-        times,
-        (fit_function(times, *popt) - data),
-        0.8 * (bin_edges[1:] - bin_edges[:-1]),
-    )
-    plt.show()
-
-    return popt
+    return times, data, sigmas
 
 
-def fit_data(
-    filename,
-    fit_function=ff,
-    bounds=(
-        (0, 0, -np.inf, 0, 0, 0, 0, 0),
-        (np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf, np.inf),
-    ),
-    maxiter=1000,
-):
-    # TODO: cut the right hand overflow off
+
+def get_data(filename, cuts=(200, -3000), subtract_constant_background=True):
     # data = parse_data(filename)[:-200]
-    data = parse_data(filename)[:-3000]
-
+    data = parse_data(filename)[:cuts[1]]
     bin_edges = range(len(data) + 1)
-
     data = data.astype(float)
-
     mean_background = np.mean(data[100:1000])
 
-    cut = 200
+    cut = cuts[0]
     data = data[cut:]
     bin_edges = bin_edges[cut:]
     bin_edge_times = apply_fit(bin_edges, constants.P_1, constants.P_2)[:, 0]
     bin_edge_times *= 1e-6  # microseconds to seconds
     times = bin_edge_times[:-1]
-
-    # mask = data > 0
-    # data = data[mask]
-    # times = times[mask]
-    # sigmas = 1/np.sqrt(data)
-    # sigmas = np.sqrt(np.maximum(data, 1))
     sigmas = np.ones(len(data))
 
-    data -= mean_background
+    if subtract_constant_background:
+        data -= mean_background
 
+    return times, data, sigmas
+
+
+def plot_data(times, data):
+    bin_width = 0.8 * (times[1] - times[0])
     plt.bar(
         times,
         data,
-        0.8 * (bin_edge_times[1:] - bin_edge_times[:-1]),
-        # 0.8 * (bin_edge_times[1:][mask] - bin_edge_times[:-1][mask]),
+        bin_width,
     )
     plt.xlabel('Decay time [seconds]')
     plt.ylabel('Counts')
-    # plt.show()
-    # exit()
 
+
+
+def fit(
+    times,
+    data,
+    sigmas,
+    fit_function=ff,
+    bounds=(
+        (0., 100),  # time gaus sigma
+        (0, 5e-6),  # t0
+        (0., 100),  # N0
+        (0., 1),  # t_mu
+        (0., 1),  # t_pi
+    ),
+    maxiter=1000,
+):
+
+    plot_data(times, data)
     fit = scipy.optimize.dual_annealing(
         # sum_of_squared_residuals(fit_function, times, data),
         sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
@@ -295,8 +269,6 @@ def fit_data(
             sum_of_squared_residuals(fit_function, times, data, dys=sigmas),
         ),
     )
-    # hess = scipy.differentiate.hessian(sum_of_squared_residuals(fit_function, times, data), fit.x)
-    # print(hess)
 
     variance_of_residuals = np.sum(
         sum_of_squared_residuals(
@@ -308,37 +280,14 @@ def fit_data(
     uncertainties = np.sqrt(np.diag(covariance))
     print(uncertainties)
 
-    # popt, pcov = scipy.optimize.curve_fit(
-    #     fit_function,
-    #     times,
-    #     data,
-    #     # p0=(1, 1e-5, 50, 0, 0),
-    #     p0=fit.x,
-    #     # sigma=sigmas,
-    #     nan_policy='omit',
-    # )
-
     reduced_chi_squared = get_reduced_chi_squared(
         fit_function, fit.x, times, data,
     )
     print(f'{reduced_chi_squared=}')
 
     plt.plot(times, fit_function(times, *fit.x), color='red')
-    plt.show()
-
-    # plt.bar(
-    #     times,
-    #     (fit_function(times, *fit.x) - data),
-    #     0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
-    # )
     # plt.show()
-    # plt.bar(
-    #     times,
-    #     (fit_function(times, *fit.x) - data) / sigmas,
-    #     0.8 * (bin_edge_times[1:] - bin_edge_times[:-1])
-    # )
-    # plt.show()
-    return fit.x
+    return fit.x, uncertainties
 
 
 def smooth_peaks(data, sigma=10):
@@ -435,23 +384,13 @@ def fit_calibration(
 
 
 def main():
-    # fit_simulated(
-    #     N0=1_000_000,
-    #     fit_function=ff,
-    #     bounds=(
-    # (0., 100),  # time gaus sigma
-    # (0., 100),  # hadronic gaus amplitude
-    # (0, 5e-6),  # t0
-    # (0., 100),  # N0
-    # (0., 1),  # t_mu
-    # (0., 1),  # t_pi
-    #     ),
-    # )
-    print('>>> data')
-    fit_data(
-        # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
-        'PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe',
-        # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
+
+    fit(
+        *get_data(
+            # "stop_S6andS7_delay_1_5_mus_fs12_50and100mm_30min.Spe",
+            'PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_60min_timinggivenbys7.Spe',
+            # "PSI_lab_2025/stop_S6andS7_delay_1_5_mus_fs12_135mm_timinggivenbys7_CFD_allstat.Spe",
+        ),
         fit_function=ff,
         bounds=(
             (0., 100),  # time gaus sigma
