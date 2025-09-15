@@ -326,6 +326,12 @@ def apply_fit(X, p_1, p_2):
     P = np.vstack([p_1, p_2])
     return A @ P
 
+def apply_fit_uncertainties(xs, dp1, dp2):
+    return np.sqrt(
+        (xs * dp1)**2
+        + (dp2**2)
+    )
+
 
 def fit_calibration(
     filename,
