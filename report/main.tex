@@ -195,7 +195,7 @@ The emitted $\beta$-particles produced scintillation light, which was converted 
 For this experiment, seven plastic scintillators of different shapes and operating voltages were used (see Table \ref{tab: scint}). The detectors were mounted on a support structure made  out of metal rods and nuts and positioned along the beamline directly downstream of the last quadrupole magnet. Figure \ref{setup} shows both a photograph of the final setup and a schematic sketch of the detector arrangement.
 \begin{table}[h!]
     \centering
-    \begin{tabular}{|c|c|c|}
+    \begin{tabular}{|c|c|c|c|}
     \hline
        Scintillator & Length x Width [cm] & Thickness [cm] & Voltage [kV]\\ \hline
        1 & 18 x 18 & 0.3 & 2.1 \\ \hline
@@ -702,13 +702,13 @@ In order to determine the optimal incident pion momentum that maximizes the prob
 A simulation was carried out using G4Beamline, based on the Geant4 framework, with the detector geometry and beam conditions of the real experiment, to produce an intuitive graphic demonstration. 
 
 \subsection{Geometry and Materials}
-The simulated setup included four scintillator detectors along the beamline (S1–S4), a 75 mm long plastic buffer, and three angled scintillators (S5–S7) with the same setup in the real experiment as shown in Figure 13:
+The simulated setup included four scintillator detectors along the beamline (S1–S4), a 75 mm long plastic buffer, and three angled scintillators (S5–S7) with the same setup in the real experiment as shown in Figure~\ref{fig:1setup}:
 Beamline scintillators and buffer: The distance between S1 and S2 is 133mm, the distance between S2 and S3 is 553mm, the distance between S3 and the buffer is 119mm, and the distance between S3 and S4 is 661mm.
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.70\linewidth]{1setup.JPEG}
 \caption{Simulation SetUp}
-\label{STOPscope}
+\label{fig:1setup}
 \end{figure}
 
 Angled scintillators: S3, S5, S6, and S7 were placed by rotating 135° relative to the beam axis to detect decay products. The distances from S3 to S5, S6, and S7 were 335 mm, 422 mm, and 535 mm, respectively.
@@ -721,49 +721,49 @@ The following particles are considered in the simulation: Pions and anti-pions (
 \subsection{Results}
 The outcome of different beam momentums are simulated, with momentum ranging from 300 MeV/c to 125 MeV/c. 
 
-300 MeV/c: as shown in the figure 14, the pion (Red) barely stopped inside the target, and it could be observed that the hadronic interactions result in protons (yellow) mostly occurred in forward direction rather than backward(Figure 14).
+300 MeV/c: as shown in the figure 14, the pion (Red) barely stopped inside the target, and it could be observed that the hadronic interactions result in protons (yellow) mostly occurred in forward direction rather than backward (Figure~\ref{fig:300mev}).
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.70\linewidth]{300MeV.PNG}
 \caption{Simulation with 300MeV/c momentum}
-\label{STOPscope}
+\label{fig:300mev}
 \end{figure}
 
-150 MeV/c: A small fraction of pions began to get stopped in the target, and fewer hadronic interactions were observed(Figure 15).
+150 MeV/c: A small fraction of pions began to get stopped in the target, and fewer hadronic interactions were observed (Figure~\ref{fig:150mev}).
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.70\linewidth]{150MeV.PNG}
 \caption{Simulation with 150MeV/c momentum}
-\label{STOPscope}
+\label{fig:150mev}
 \end{figure}
 
-139 MeV/c: More pions get stopped inside S3(Figure 16). 
+139 MeV/c: More pions get stopped inside S3 (Figure~\ref{fig:139mev}).
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.70\linewidth]{139MeV.PNG}
 \caption{Simulation with 139MeV/c momentum}
-\label{STOPscope}
+\label{fig:139mev}
 \end{figure}
 
-130 MeV/c: A clear increase in stopping probability within S3, with good statistics for analysis(Figure 17).
+130 MeV/c: A clear increase in stopping probability within S3, with good statistics for analysis (Figure~\ref{fig:130mev}).
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.70\linewidth]{130MeV.PNG}
 \caption{Simulation with 130MeV/c momentum}
-\label{STOPscope}
+\label{fig:130mev}
 \end{figure}
 
-125 MeV/c: Many pions stopped in the target as observed, approximately the same momentum chosen in the real experiment(Figure 18).
+125 MeV/c: Many pions stopped in the target as observed, approximately the same momentum chosen in the real experiment (Figure~\ref{fig:125mev}).
 
 \begin{figure}[h]
 \centering
 \includegraphics[width=0.70\linewidth]{125MeV.PNG}
 \caption{Simulation with 125MeV/c momentum}
-\label{STOPscope}
+\label{fig:125mev}
 \end{figure}
 
 \subsection{Conclusion}
